@@ -1,3 +1,6 @@
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -52,6 +55,7 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -61,19 +65,6 @@ android {
             signingConfig signingConfigs.debug
         }
     }
-}
-
-    flavorDimensions "default"
-
-    productFlavors {
-        dev {
-            dimension "default"
-            applicationIdSuffix ""
-        }
-        release {
-            dimension "default"
-            applicationIdSuffix ""
-        }
 }
 
 flutter {
