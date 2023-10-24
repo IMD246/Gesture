@@ -180,9 +180,11 @@ class _MyHomePageState extends State<MyHomePage> {
   List<NumPadChar> listNumPadChars = [];
   String finalNumber = "";
   String displayNumber = "";
+  String memory = "";
 
   _clear() {
     setState(() {
+      listNumPadChars.clear();
       finalNumber = "";
       displayNumber = "";
     });
@@ -235,6 +237,10 @@ class _MyHomePageState extends State<MyHomePage> {
       // Clear finalNumber
       finalNumber = "";
     }
+    // If
+    if (listNumPadChars.isEmpty && memory.isNotEmpty) {
+      listNumPadChars.add(NumPadChar(memory, KeyType.num));
+    }
     // If the first character is not a number and not +/- operator then return.
     if (listNumPadChars.isEmpty && (value != "+" || value != "-")) {
       return;
@@ -258,15 +264,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _delete() {
     if (listNumPadChars.isNotEmpty) {
-      listNumPadChars.removeLast();
-    }
-    if (displayNumber.isNotEmpty) {
-      bool isSeparator = displayNumber.endsWith(',');
-      String newValue = displayNumber.substring(
-          0, displayNumber.length - (isSeparator ? 2 : 1));
-      setState(() {
-        displayNumber = newValue;
-      });
+      NumPadChar numPadChar = listNumPadChars.last;
+      if (numPadChar.status == KeyType.operator) {
+        // Remove operator from the list
+        listNumPadChars.removeLast();
+      } else {
+        // Remove the last character of the number
+        numPadChar.value =
+            numPadChar.value.substring(0, numPadChar.value.length - 1);
+        setState(() {
+          displayNumber = _toDisplayNumber();
+        });
+      }
     }
   }
 
@@ -276,12 +285,14 @@ class _MyHomePageState extends State<MyHomePage> {
     ContextModel cm = ContextModel();
     String eval = exp.evaluate(EvaluationType.REAL, cm).toString();
     setState(() {
+      // Show the result on the screen.
       displayNumber = formatAmount(eval);
-      // Clear the finalNumber and set the result.
-      finalNumber = displayNumber;
-      // Clear the list and put the final result into the list
+      // Add current result to memory
+      memory = eval;
+      // Clear the finalNumber.
+      finalNumber = "";
+      // Clear the list.
       listNumPadChars.clear();
-      listNumPadChars.add(NumPadChar(displayNumber, KeyType.num));
     });
   }
 
