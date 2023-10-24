@@ -279,6 +279,11 @@ class _MyHomePageState extends State<MyHomePage> {
         if (newValue.isEmpty) {
           // If already cleaned, then remove it from the list
           listNumPadChars.removeLast();
+          // If there is only 1 operator left, then cleanup the list
+          if (listNumPadChars.length == 1 &&
+              listNumPadChars.last.status == KeyType.operator) {
+            listNumPadChars.clear();
+          }
         } else {
           // Or update the new value
           numPadChar.value = formatAmount(newValue.replaceAll(',', ''));
