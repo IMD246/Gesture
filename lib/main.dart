@@ -1,7 +1,7 @@
-import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:gesture_test/staggered_reorderable_gridview/cutomer_multi_child_layout_view.dart';
 import 'package:gesture_test/staggered_reorderable_gridview/item_model.dart';
+import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 
 void main() => runApp(const MyApp());
@@ -162,101 +162,126 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-enum StatusKeyboard { enter, operation, num }
+enum KeyType { func, operator, num }
+
+class NumPadChar {
+  String value;
+  KeyType status;
+
+  NumPadChar(this.value, this.status);
+
+  @override
+  String toString() {
+    return value;
+  }
+}
 
 class _MyHomePageState extends State<MyHomePage> {
+  List<NumPadChar> listNumPadChars = [];
   String finalNumber = "";
   String displayNumber = "";
-  String operation = "";
-  String dot = "";
-  StatusKeyboard statusKeyboard = StatusKeyboard.num;
+
   _clear() {
     setState(() {
       finalNumber = "";
-      dot = "";
       displayNumber = "";
     });
   }
 
-  setDot(String value) {
-    if (dot.isNotEmpty) return;
-    setState(() {
-      dot = value;
-    });
-  }
-
-  setStatusKeyBoard(StatusKeyboard status) {
-    if (statusKeyboard == status) return;
-    setState(() {
-      statusKeyboard = status;
-    });
-  }
-
   setNumber(String value) {
-    if (statusKeyboard == StatusKeyboard.enter) {
-      setState(() {
-        dot = "";
-      });
-    }
-    setState(() {
-      operation = "";
-    });
-    setStatusKeyBoard(StatusKeyboard.num);
-    if (operation.isEmpty && displayNumber.length == 15) {
-      print("Đủ kí tự");
-      return;
-    }
-    if (operation.isNotEmpty) {
-      final splitDisplayNumber = displayNumber.split(operation);
-      if (splitDisplayNumber.last.length == 15) {
+    if (finalNumber.contains('.')) {
+      // If already have (.) character, then return
+      if (value == ".") {
+        return;
+      }
+      // Only accept 3 character after (.)
+      int decimalPlaces = finalNumber.length - (finalNumber.indexOf('.') + 1);
+      if (decimalPlaces >= 3) {
+        return;
+      }
+    } else {
+      // If the total length is 15, then return
+      if (finalNumber.length >= 15) {
         print("Đủ kí tự");
         return;
       }
     }
-    if (value[0] == "0") {
-      if (displayNumber.length == 1 && displayNumber[0] == "0") {
-        return;
-      }
-      setState(() {
-        displayNumber += value;
-      });
-    } else {
-      if ((dot.isNotEmpty && value == "." && operation.isEmpty) ||
-          (displayNumber.isEmpty && value == ".")) {
-        return;
-      }
-      setState(() {
-        displayNumber += value;
-      });
-    }
-  }
 
-  setOperation(String value) {
-    if (statusKeyboard == StatusKeyboard.operation) return;
-    if (displayNumber.isEmpty) return;
-    if (operation.isNotEmpty) return;
+    finalNumber += value;
+
+    final nFormat = NumberFormat("#,##0.##", "en_US");
+    // Update the display number on the screen.
     setState(() {
-      operation = value;
-      dot = "";
-      displayNumber += value;
+      displayNumber =
+          _toDisplayNumber() + nFormat.format(double.parse(finalNumber));
     });
   }
 
-  calculateResult() {
-    // Multiplication, division first
-    if (operation.isNotEmpty) {
-      print("wrong format");
+  setOperation(String value) {
+    // If the last character is a operator then replace it with the new one.
+    if (listNumPadChars.isNotEmpty &&
+        listNumPadChars.last.status == KeyType.operator) {
+      listNumPadChars.last.value = value;
+
+      // Update the display number on the screen.
+      setState(() {
+        displayNumber = _toDisplayNumber();
+      });
       return;
     }
-    Parser p = Parser();
-    Expression exp = p.parse(displayNumber);
-    ContextModel cm = ContextModel();
-    Decimal eval =
-        Decimal.parse(exp.evaluate(EvaluationType.REAL, cm).toString());
+    // If the finalNumber is not empty then put it into the list.
+    if (finalNumber.isNotEmpty) {
+      listNumPadChars.add(NumPadChar(formatAmount(finalNumber), KeyType.num));
+      // Clear finalNumber
+      finalNumber = "";
+    }
+    // If the first character is not a number and not +/- operator then return.
+    if (listNumPadChars.isEmpty && (value != "+" || value != "-")) {
+      return;
+    }
+    // Else add the new operator into the list.
+    listNumPadChars.add(NumPadChar(value, KeyType.operator));
+
+    // Update the display number on the screen.
     setState(() {
-      displayNumber = eval.toString();
-      operation = "";
-      dot = "";
+      displayNumber = _toDisplayNumber();
+    });
+  }
+
+  String _toDisplayNumber() {
+    String result = '';
+    for (NumPadChar numPadChar in listNumPadChars) {
+      result += numPadChar.toString();
+    }
+    return result;
+  }
+
+  void _delete() {
+    if (listNumPadChars.isNotEmpty) {
+      listNumPadChars.removeLast();
+    }
+    if (displayNumber.isNotEmpty) {
+      bool isSeparator = displayNumber.endsWith(',');
+      String newValue = displayNumber.substring(
+          0, displayNumber.length - (isSeparator ? 2 : 1));
+      setState(() {
+        displayNumber = newValue;
+      });
+    }
+  }
+
+  void _calculateResult() {
+    Parser p = Parser();
+    Expression exp = p.parse(displayNumber.replaceAll(',', ''));
+    ContextModel cm = ContextModel();
+    String eval = exp.evaluate(EvaluationType.REAL, cm).toString();
+    setState(() {
+      displayNumber = formatAmount(eval);
+      // Clear the finalNumber and set the result.
+      finalNumber = displayNumber;
+      // Clear the list and put the final result into the list
+      listNumPadChars.clear();
+      listNumPadChars.add(NumPadChar(displayNumber, KeyType.num));
     });
   }
 
@@ -272,17 +297,7 @@ class _MyHomePageState extends State<MyHomePage> {
         setOperation("*");
         break;
       case 'id_btn_del':
-        if (statusKeyboard == StatusKeyboard.enter) {
-          _clear();
-        } else {
-          if (displayNumber.isNotEmpty) {
-            setState(() {
-              statusKeyboard = StatusKeyboard.num;
-              displayNumber =
-                  displayNumber.substring(0, displayNumber.length - 1);
-            });
-          }
-        }
+        _delete();
         break;
       case 'id_btn_minus':
         setOperation("-");
@@ -291,10 +306,9 @@ class _MyHomePageState extends State<MyHomePage> {
         setOperation("+");
         break;
       case 'id_btn_enter':
-        calculateResult();
+        _calculateResult();
         break;
       case 'id_btn_dot':
-        setDot(".");
         setNumber(".");
         break;
       case 'id_btn_7':
@@ -334,60 +348,10 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  String formatAmount(String price) {
-    if (price.isNotEmpty) {
-      final convertToNumPrice = num.parse(price);
-      if (convertToNumPrice < 000000009) {
-        setState(() {
-          displayNumber = "0";
-        });
-        return "0";
-      }
-    }
-    final splitPrice = price.split(".");
-    String numberString = splitPrice.first;
-    if (splitPrice.length >= 2) {
-      numberString = splitPrice.first;
-      String decimal = handleDecimal(price);
-      numberString = Decimal.parse(
-              (num.parse(splitPrice.first) + num.parse(decimal)).toString())
-          .toString();
-    }
-    final numberDigits = List.from(numberString.split(''));
-    int index = numberDigits.length - 3;
-    while (index > 0) {
-      numberDigits.insert(index, ',');
-      index -= 3;
-    }
-    return numberDigits.join().replaceAll(".", "");
-  }
-
-  String handleDecimal(String value) {
-    final numValue = num.parse(value);
-    double fraction = 0;
-    if (numValue < 0) {
-      fraction = double.parse(value) + double.parse(value).truncate();
-    } else {
-      fraction = double.parse(value) - double.parse(value).truncate();
-    }
-    if (fraction <= 0.0009) {
-      return "0";
-    }
-    if (fraction.toString().length > 4) {
-      final splitFraction = fraction.toString().split(".");
-      String stringFraction = splitFraction.first + splitFraction.last;
-      int thirdCharacter = int.parse(stringFraction[2]);
-      if (thirdCharacter >= 5) {
-        final getIndexDot = getIndexOfString(fraction.toString(), ".");
-        thirdCharacter++;
-        stringFraction = stringFraction.replaceFirst(
-            stringFraction[2], thirdCharacter.toString(), 2);
-        stringFraction = addCharToString(value, getIndexDot);
-        return num.parse(stringFraction).toStringAsFixed(3);
-      }
-      return fraction.toStringAsFixed(3);
-    }
-    return fraction.toString();
+  String formatAmount(String value) {
+    String trimmed = value.replaceAll(',', '');
+    final nFormat = NumberFormat("#,##0.##", "en_US");
+    return nFormat.format(double.parse(trimmed));
   }
 
   int getIndexOfString(String value, String keyword) {
@@ -411,13 +375,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Align(
                   alignment: Alignment.bottomLeft,
                   child: Text(
-                    operation.isEmpty && statusKeyboard == StatusKeyboard.enter
-                        ? formatAmount(displayNumber)
-                        : displayNumber,
+                    displayNumber,
                     textAlign: TextAlign.start,
                     style: const TextStyle(
                       fontSize: 24,
-                      color: Colors.yellow,
+                      color: Colors.red,
                     ),
                   ),
                 ),
