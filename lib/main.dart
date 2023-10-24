@@ -239,8 +239,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     // If there is already have a calculated result, then continue to add operator
     if (listNumPadChars.isEmpty && memory.isNotEmpty) {
-      listNumPadChars.add(NumPadChar(memory, KeyType.num));
-      memory = "";
+      _getResultFromMemory();
     }
     // If the first character is not a number and not +/- operator then return.
     if (listNumPadChars.isEmpty && (value != "+" || value != "-")) {
@@ -266,8 +265,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _delete() {
     // When user press delete on the calculated result.
     if (listNumPadChars.isEmpty && memory.isNotEmpty) {
-      listNumPadChars.add(NumPadChar(memory, KeyType.num));
-      memory = "";
+      _getResultFromMemory();
     }
     // Delete item in the list if not empty
     if (listNumPadChars.isNotEmpty) {
@@ -315,6 +313,21 @@ class _MyHomePageState extends State<MyHomePage> {
       // Clear the list.
       listNumPadChars.clear();
     });
+  }
+
+  void _getResultFromMemory() {
+    if (memory.contains("-")) {
+      listNumPadChars.add(NumPadChar("-", KeyType.operator));
+      memory = memory.replaceAll('-', '');
+    }
+    listNumPadChars.add(NumPadChar(memory, KeyType.num));
+    memory = "";
+  }
+
+  String formatAmount(String value) {
+    String trimmed = value.replaceAll(',', '');
+    final nFormat = NumberFormat("#,##0.##", "en_US");
+    return nFormat.format(double.parse(trimmed));
   }
 
   void onTap(int id, String idx) {
@@ -378,20 +391,6 @@ class _MyHomePageState extends State<MyHomePage> {
         break;
       default:
     }
-  }
-
-  String formatAmount(String value) {
-    String trimmed = value.replaceAll(',', '');
-    final nFormat = NumberFormat("#,##0.##", "en_US");
-    return nFormat.format(double.parse(trimmed));
-  }
-
-  int getIndexOfString(String value, String keyword) {
-    return value.characters.toList().indexOf(keyword);
-  }
-
-  String addCharToString(String value, position) {
-    return "${value.substring(0, position - 1)}${value.substring(position, value.length)}";
   }
 
   @override
