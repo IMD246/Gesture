@@ -237,9 +237,10 @@ class _MyHomePageState extends State<MyHomePage> {
       // Clear finalNumber
       finalNumber = "";
     }
-    // If
+    // If there is already have a calculated result, then continue to add operator
     if (listNumPadChars.isEmpty && memory.isNotEmpty) {
       listNumPadChars.add(NumPadChar(memory, KeyType.num));
+      memory = "";
     }
     // If the first character is not a number and not +/- operator then return.
     if (listNumPadChars.isEmpty && (value != "+" || value != "-")) {
@@ -263,6 +264,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _delete() {
+    // When user press delete on the calculated result.
+    if (listNumPadChars.isEmpty && memory.isNotEmpty) {
+      listNumPadChars.add(NumPadChar(memory, KeyType.num));
+      memory = "";
+    }
+    // Delete item in the list if not empty
     if (listNumPadChars.isNotEmpty) {
       NumPadChar numPadChar = listNumPadChars.last;
       if (numPadChar.status == KeyType.operator) {
@@ -270,12 +277,26 @@ class _MyHomePageState extends State<MyHomePage> {
         listNumPadChars.removeLast();
       } else {
         // Remove the last character of the number
-        numPadChar.value =
-            numPadChar.value.substring(0, numPadChar.value.length - 1);
+        String newValue = numPadChar.value.substring(0, numPadChar.value.length - 1);
+        if (newValue.isEmpty) {
+          // If already cleaned, then remove it from the list
+          listNumPadChars.removeLast();
+        } else {
+          // Or update the new value
+          numPadChar.value = formatAmount(newValue.replaceAll(',', ''));
+        }
         setState(() {
           displayNumber = _toDisplayNumber();
         });
       }
+    }
+    // Delete the item in temporary variable (not in the list yet)
+    if (finalNumber.isNotEmpty) {
+      String newValue = finalNumber.substring(0, finalNumber.length - 1);
+      finalNumber = newValue;
+      setState(() {
+        displayNumber = formatAmount(newValue);
+      });
     }
   }
 
@@ -288,7 +309,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // Show the result on the screen.
       displayNumber = formatAmount(eval);
       // Add current result to memory
-      memory = eval;
+      memory = displayNumber;
       // Clear the finalNumber.
       finalNumber = "";
       // Clear the list.
