@@ -222,7 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
   setOperation(String value) {
     // If the last character is a operator then replace it with the new one.
     if (listNumPadChars.isNotEmpty &&
-        listNumPadChars.last.status == KeyType.operator) {
+        listNumPadChars.last.status == KeyType.operator && finalNumber.isEmpty) {
       listNumPadChars.last.value = value;
 
       // Update the display number on the screen.
@@ -267,6 +267,12 @@ class _MyHomePageState extends State<MyHomePage> {
     if (listNumPadChars.isEmpty && memory.isNotEmpty) {
       _getResultFromMemory();
     }
+    // If there is a number inputting in-progress. So put it to list immediately
+    if (finalNumber.isNotEmpty) {
+      listNumPadChars.add(NumPadChar(formatAmount(finalNumber), KeyType.num));
+      // Clear finalNumber
+      finalNumber = "";
+    }
     // Delete item in the list if not empty
     if (listNumPadChars.isNotEmpty) {
       NumPadChar numPadChar = listNumPadChars.last;
@@ -288,17 +294,9 @@ class _MyHomePageState extends State<MyHomePage> {
           // Or update the new value
           numPadChar.value = formatAmount(newValue.replaceAll(',', ''));
         }
-        setState(() {
-          displayNumber = _toDisplayNumber();
-        });
       }
-    }
-    // Delete the item in temporary variable (not in the list yet)
-    if (finalNumber.isNotEmpty) {
-      String newValue = finalNumber.substring(0, finalNumber.length - 1);
-      finalNumber = newValue;
       setState(() {
-        displayNumber = formatAmount(newValue);
+        displayNumber = _toDisplayNumber();
       });
     }
   }
