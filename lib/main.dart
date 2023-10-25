@@ -191,6 +191,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   setNumber(String value) {
+    // Clear the memory if user start to input a new number after calculated the result.
+    if (memory.isNotEmpty) {
+      memory = "";
+    }
     if (finalNumber.contains('.')) {
       // If already have (.) character, then return
       if (value == ".") {
@@ -302,6 +306,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _calculateResult() {
+    // Do not calculate the result if displayNumber is empty
+    if (displayNumber.isEmpty) return;
+
+    // Start calculate the result
     Parser p = Parser();
     Expression exp = p.parse(displayNumber.replaceAll(',', ''));
     ContextModel cm = ContextModel();
