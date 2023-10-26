@@ -426,6 +426,17 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ),
+              Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  "finalNum: $finalNumber",
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
               _buildNumpad(context, onTap),
             ],
           ),
