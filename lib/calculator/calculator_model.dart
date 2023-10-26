@@ -34,6 +34,7 @@ class CalculatorModel extends ChangeNotifier {
         int decimalPlaces =
             numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
         if (decimalPlaces >= 3) {
+           log("Vượt quá kí tự cho phép");
           return;
         }
       } else {
@@ -102,8 +103,9 @@ class CalculatorModel extends ChangeNotifier {
       } else {
         // Remove the last character of the number
         String newValue =
-            numPadChar.value.substring(0, numPadChar.value.length - 1);
-        numPadChar.value = newValue.replaceAll(',', '');
+           _unFormatAmount(numPadChar.value).substring(0, numPadChar.value.length - 1);
+        // Update the new value
+        numPadChar.value = newValue;
         if (newValue.isEmpty) {
           // If already cleaned, then remove it from the list
           _listNumPadChars.removeLast();
@@ -112,10 +114,7 @@ class CalculatorModel extends ChangeNotifier {
               _listNumPadChars.last.status == KeyType.operator) {
             _listNumPadChars.clear();
           }
-        } else {
-          // Or update the new value
-          numPadChar.value = newValue.replaceAll(',', '');
-        }
+        } 
       }
       _setDisplayNumber();
     }
@@ -127,7 +126,7 @@ class CalculatorModel extends ChangeNotifier {
 
     // Start calculate the result
     Parser p = Parser();
-    Expression exp = p.parse(displayNumber.value.replaceAll(',', ''));
+    Expression exp = p.parse(_unFormatAmount(displayNumber.value));
     ContextModel cm = ContextModel();
     String eval = exp.evaluate(EvaluationType.REAL, cm).toString();
     // Show the result on the screen.
@@ -139,21 +138,26 @@ class CalculatorModel extends ChangeNotifier {
   }
 
   String _toDisplayNumber() {
-    String result = '';
+   String result = '';
     for (NumPadChar numPadChar in _listNumPadChars) {
       result += (numPadChar.status == KeyType.num)
-          ? numPadChar.value.contains(".")
-              ? numPadChar.toString()
-              : _formatAmount(numPadChar.value)
+          ? _formatAmount(numPadChar.value)
           : numPadChar.toString();
-      int decimalPlaces =
-          numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
-      if (decimalPlaces == numPadChar.value.length) {}
+      if (numPadChar.value.endsWith('.')) {
+        result += '.';
+      } else if (numPadChar.value.endsWith('.0')) {
+        result += '.0';
+      } else if (numPadChar.value.endsWith('.00')) {
+        result += '.00';
+      } else if (numPadChar.value.endsWith('.000')) {
+        result += '.000';
+      }
     }
     return result;
   }
 
   void _getResultFromMemory() {
+    _memory = _unFormatAmount(_memory);
     if (_memory.contains("-")) {
       _listNumPadChars.add(NumPadChar("-", KeyType.operator));
       _memory = _memory.replaceAll('-', '');
@@ -175,6 +179,10 @@ class CalculatorModel extends ChangeNotifier {
     String trimmed = value.replaceAll(',', '');
     final nFormat = NumberFormat("#,##0.##", "en_US");
     return nFormat.format(double.parse(trimmed));
+  }
+
+  String _unFormatAmount(String value) {
+    return value.replaceAll(',', '');
   }
 
   void onTapNumpad(int id, String idx) {
