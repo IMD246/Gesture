@@ -1,3 +1,5 @@
+import 'package:decimal/decimal.dart';
+import 'package:decimal/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:gesture_test/staggered_reorderable_gridview/cutomer_multi_child_layout_view.dart';
 import 'package:gesture_test/staggered_reorderable_gridview/item_model.dart';
@@ -208,8 +210,8 @@ class _MyHomePageState extends State<MyHomePage> {
           return;
         }
       } else {
-        // If the total length is 15, then return
-        if (numPadChar.value.length + value.length > 15) {
+        // If the total length is 15, then return. Still allow {.} character
+        if (value != "." && numPadChar.value.length + value.length > 15) {
           print("Đủ kí tự");
           return;
         }
@@ -357,7 +359,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String formatAmount(String value) {
     String trimmed = unFormatAmount(value);
     final nFormat = NumberFormat("#,##0.###", "en_US");
-    return nFormat.format(double.parse(trimmed));
+    return nFormat.format(DecimalIntl(Decimal.parse(trimmed)));
   }
 
   String unFormatAmount(String value) {
