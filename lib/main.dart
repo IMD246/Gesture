@@ -201,7 +201,8 @@ class _MyHomePageState extends State<MyHomePage> {
           return;
         }
         // Only accept 3 character after (.)
-        int decimalPlaces = numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
+        int decimalPlaces =
+            numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
         if (decimalPlaces >= 3) {
           return;
         }
@@ -212,9 +213,18 @@ class _MyHomePageState extends State<MyHomePage> {
           return;
         }
       }
-      numPadChar.value += value;
+      // If numpad has 1 length and first char numpad is 0 and value not {.} then replace it by value
+      if (numPadChar.value.length == 1 &&
+          numPadChar.value[0] == "0" &&
+          value != ".") {
+        numPadChar.value = value;
+      } else {
+        numPadChar.value += value;
+      }
     } else {
-      numPadChar = NumPadChar(value, KeyType.num);
+      // numpad is empty and value is {.} then return
+      if (value == ".") return;
+      numPadChar = NumPadChar(value == "000" ? "0" : value, KeyType.num);
       listNumPadChars.add(numPadChar);
     }
     // Update the display number on the screen.
@@ -226,7 +236,8 @@ class _MyHomePageState extends State<MyHomePage> {
   setOperation(String value) {
     // If the last character is a operator then replace it with the new one.
     if (listNumPadChars.isNotEmpty &&
-        listNumPadChars.last.status == KeyType.operator/* && finalNumber.isEmpty*/) {
+        listNumPadChars.last.status ==
+            KeyType.operator /* && finalNumber.isEmpty*/) {
       listNumPadChars.last.value = value;
 
       // Update the display number on the screen.
@@ -265,7 +276,8 @@ class _MyHomePageState extends State<MyHomePage> {
         listNumPadChars.removeLast();
       } else {
         // Remove the last character of the number
-        String newValue = numPadChar.value.substring(0, numPadChar.value.length - 1);
+        String newValue =
+            numPadChar.value.substring(0, numPadChar.value.length - 1);
         numPadChar.value = newValue.replaceAll(',', '');
         if (newValue.isEmpty) {
           // If already cleaned, then remove it from the list
@@ -277,7 +289,7 @@ class _MyHomePageState extends State<MyHomePage> {
           }
         } else {
           // Or update the new value
-          numPadChar.value = formatAmount(newValue.replaceAll(',', ''));
+          numPadChar.value = newValue.replaceAll(',', '');
         }
       }
       setState(() {
@@ -309,12 +321,13 @@ class _MyHomePageState extends State<MyHomePage> {
     String result = '';
     for (NumPadChar numPadChar in listNumPadChars) {
       result += (numPadChar.status == KeyType.num)
-          ? formatAmount(numPadChar.value)
+          ? numPadChar.value.contains(".")
+              ? numPadChar.toString()
+              : formatAmount(numPadChar.value)
           : numPadChar.toString();
-      int decimalPlaces = numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
-      if (decimalPlaces == numPadChar.value.length) {
-
-      }
+      int decimalPlaces =
+          numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
+      if (decimalPlaces == numPadChar.value.length) {}
     }
     return result;
   }
@@ -329,7 +342,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   NumPadChar? _getLastNumberItemFromList() {
-    if (listNumPadChars.isNotEmpty && listNumPadChars.last.status == KeyType.num) {
+    if (listNumPadChars.isNotEmpty &&
+        listNumPadChars.last.status == KeyType.num) {
       return listNumPadChars.last;
     } else {
       return null;
@@ -417,9 +431,11 @@ class _MyHomePageState extends State<MyHomePage> {
               SizedBox(
                 height: 300,
                 width: double.infinity,
-                child: ListView.builder(itemCount: listNumPadChars.length, itemBuilder: (context, index) {
-                  return Text(listNumPadChars[index].value);
-                }),
+                child: ListView.builder(
+                    itemCount: listNumPadChars.length,
+                    itemBuilder: (context, index) {
+                      return Text(listNumPadChars[index].value);
+                    }),
               ),
               Expanded(
                 child: Align(
