@@ -178,14 +178,12 @@ class NumPadChar {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<NumPadChar> listNumPadChars = [];
-  String finalNumber = "";
   String displayNumber = "";
   String memory = "";
 
   _clear() {
     setState(() {
       listNumPadChars.clear();
-      finalNumber = "";
       displayNumber = "";
     });
   }
@@ -195,38 +193,40 @@ class _MyHomePageState extends State<MyHomePage> {
     if (memory.isNotEmpty) {
       memory = "";
     }
-    if (finalNumber.contains('.')) {
-      // If already have (.) character, then return
-      if (value == ".") {
-        return;
+    NumPadChar? numPadChar = _getLastNumberItemFromList();
+    if (numPadChar != null) {
+      if (numPadChar.value.contains('.')) {
+        // If already have (.) character, then return
+        if (value == ".") {
+          return;
+        }
+        // Only accept 3 character after (.)
+        int decimalPlaces = numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
+        if (decimalPlaces >= 3) {
+          return;
+        }
+      } else {
+        // If the total length is 15, then return
+        if (numPadChar.value.length >= 15) {
+          print("Đủ kí tự");
+          return;
+        }
       }
-      // Only accept 3 character after (.)
-      int decimalPlaces = finalNumber.length - (finalNumber.indexOf('.') + 1);
-      if (decimalPlaces >= 3) {
-        return;
-      }
+      numPadChar.value += value;
     } else {
-      // If the total length is 15, then return
-      if (finalNumber.length >= 15) {
-        print("Đủ kí tự");
-        return;
-      }
+      numPadChar = NumPadChar(value, KeyType.num);
+      listNumPadChars.add(numPadChar);
     }
-
-    finalNumber += value;
-
-    final nFormat = NumberFormat("#,##0.##", "en_US");
     // Update the display number on the screen.
     setState(() {
-      displayNumber =
-          _toDisplayNumber() + nFormat.format(double.parse(finalNumber));
+      displayNumber = _toDisplayNumber();
     });
   }
 
   setOperation(String value) {
     // If the last character is a operator then replace it with the new one.
     if (listNumPadChars.isNotEmpty &&
-        listNumPadChars.last.status == KeyType.operator && finalNumber.isEmpty) {
+        listNumPadChars.last.status == KeyType.operator/* && finalNumber.isEmpty*/) {
       listNumPadChars.last.value = value;
 
       // Update the display number on the screen.
@@ -234,12 +234,6 @@ class _MyHomePageState extends State<MyHomePage> {
         displayNumber = _toDisplayNumber();
       });
       return;
-    }
-    // If the finalNumber is not empty then put it into the list.
-    if (finalNumber.isNotEmpty) {
-      listNumPadChars.add(NumPadChar(formatAmount(finalNumber), KeyType.num));
-      // Clear finalNumber
-      finalNumber = "";
     }
     // If there is already have a calculated result, then continue to add operator
     if (listNumPadChars.isEmpty && memory.isNotEmpty) {
@@ -258,24 +252,10 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  String _toDisplayNumber() {
-    String result = '';
-    for (NumPadChar numPadChar in listNumPadChars) {
-      result += numPadChar.toString();
-    }
-    return result;
-  }
-
   void _delete() {
     // When user press delete on the calculated result.
     if (listNumPadChars.isEmpty && memory.isNotEmpty) {
       _getResultFromMemory();
-    }
-    // If there is a number inputting in-progress. So put it to list immediately
-    if (finalNumber.isNotEmpty) {
-      listNumPadChars.add(NumPadChar(formatAmount(finalNumber), KeyType.num));
-      // Clear finalNumber
-      finalNumber = "";
     }
     // Delete item in the list if not empty
     if (listNumPadChars.isNotEmpty) {
@@ -286,6 +266,7 @@ class _MyHomePageState extends State<MyHomePage> {
       } else {
         // Remove the last character of the number
         String newValue = numPadChar.value.substring(0, numPadChar.value.length - 1);
+        numPadChar.value = newValue.replaceAll(',', '');
         if (newValue.isEmpty) {
           // If already cleaned, then remove it from the list
           listNumPadChars.removeLast();
@@ -319,11 +300,23 @@ class _MyHomePageState extends State<MyHomePage> {
       displayNumber = formatAmount(eval);
       // Add current result to memory
       memory = displayNumber;
-      // Clear the finalNumber.
-      finalNumber = "";
       // Clear the list.
       listNumPadChars.clear();
     });
+  }
+
+  String _toDisplayNumber() {
+    String result = '';
+    for (NumPadChar numPadChar in listNumPadChars) {
+      result += (numPadChar.status == KeyType.num)
+          ? formatAmount(numPadChar.value)
+          : numPadChar.toString();
+      int decimalPlaces = numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
+      if (decimalPlaces == numPadChar.value.length) {
+
+      }
+    }
+    return result;
   }
 
   void _getResultFromMemory() {
@@ -333,6 +326,14 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     listNumPadChars.add(NumPadChar(memory, KeyType.num));
     memory = "";
+  }
+
+  NumPadChar? _getLastNumberItemFromList() {
+    if (listNumPadChars.isNotEmpty && listNumPadChars.last.status == KeyType.num) {
+      return listNumPadChars.last;
+    } else {
+      return null;
+    }
   }
 
   String formatAmount(String value) {
@@ -413,6 +414,13 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              SizedBox(
+                height: 300,
+                width: double.infinity,
+                child: ListView.builder(itemCount: listNumPadChars.length, itemBuilder: (context, index) {
+                  return Text(listNumPadChars[index].value);
+                }),
+              ),
               Expanded(
                 child: Align(
                   alignment: Alignment.bottomLeft,
@@ -423,17 +431,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       fontSize: 24,
                       color: Colors.red,
                     ),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.bottomLeft,
-                child: Text(
-                  "finalNum: $finalNumber",
-                  textAlign: TextAlign.start,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    color: Colors.red,
                   ),
                 ),
               ),
