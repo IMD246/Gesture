@@ -203,12 +203,13 @@ class _MyHomePageState extends State<MyHomePage> {
         // Only accept 3 character after (.)
         int decimalPlaces =
             numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
-        if (decimalPlaces >= 3) {
+        if (decimalPlaces + value.length > 3) {
+          print("Vượt quá kí tự cho phép");
           return;
         }
       } else {
         // If the total length is 15, then return
-        if (numPadChar.value.length >= 15) {
+        if (numPadChar.value.length + value.length > 15) {
           print("Đủ kí tự");
           return;
         }
@@ -276,9 +277,10 @@ class _MyHomePageState extends State<MyHomePage> {
         listNumPadChars.removeLast();
       } else {
         // Remove the last character of the number
-        String newValue =
-            numPadChar.value.substring(0, numPadChar.value.length - 1);
-        numPadChar.value = newValue.replaceAll(',', '');
+        String newValue = unFormatAmount(numPadChar.value)
+            .substring(0, numPadChar.value.length - 1);
+        // Update the new value
+        numPadChar.value = newValue;
         if (newValue.isEmpty) {
           // If already cleaned, then remove it from the list
           listNumPadChars.removeLast();
@@ -287,9 +289,6 @@ class _MyHomePageState extends State<MyHomePage> {
               listNumPadChars.last.status == KeyType.operator) {
             listNumPadChars.clear();
           }
-        } else {
-          // Or update the new value
-          numPadChar.value = newValue.replaceAll(',', '');
         }
       }
       setState(() {
@@ -304,7 +303,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // Start calculate the result
     Parser p = Parser();
-    Expression exp = p.parse(displayNumber.replaceAll(',', ''));
+    Expression exp = p.parse(unFormatAmount(displayNumber));
     ContextModel cm = ContextModel();
     String eval = exp.evaluate(EvaluationType.REAL, cm).toString();
     setState(() {
@@ -321,18 +320,23 @@ class _MyHomePageState extends State<MyHomePage> {
     String result = '';
     for (NumPadChar numPadChar in listNumPadChars) {
       result += (numPadChar.status == KeyType.num)
-          ? numPadChar.value.contains(".")
-              ? numPadChar.toString()
-              : formatAmount(numPadChar.value)
+          ? formatAmount(numPadChar.value)
           : numPadChar.toString();
-      int decimalPlaces =
-          numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
-      if (decimalPlaces == numPadChar.value.length) {}
+      if (numPadChar.value.endsWith('.')) {
+        result += '.';
+      } else if (numPadChar.value.endsWith('.0')) {
+        result += '.0';
+      } else if (numPadChar.value.endsWith('.00')) {
+        result += '.00';
+      } else if (numPadChar.value.endsWith('.000')) {
+        result += '.000';
+      }
     }
     return result;
   }
 
   void _getResultFromMemory() {
+    memory = unFormatAmount(memory);
     if (memory.contains("-")) {
       listNumPadChars.add(NumPadChar("-", KeyType.operator));
       memory = memory.replaceAll('-', '');
@@ -351,9 +355,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   String formatAmount(String value) {
-    String trimmed = value.replaceAll(',', '');
-    final nFormat = NumberFormat("#,##0.##", "en_US");
+    String trimmed = unFormatAmount(value);
+    final nFormat = NumberFormat("#,##0.###", "en_US");
     return nFormat.format(double.parse(trimmed));
+  }
+
+  String unFormatAmount(String value) {
+    return value.replaceAll(',', '');
   }
 
   void onTap(int id, String idx) {
