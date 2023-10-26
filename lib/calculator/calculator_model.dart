@@ -1,12 +1,13 @@
 import 'dart:developer';
-
-import 'package:flutter/material.dart';
+import 'package:decimal/decimal.dart';
+import 'package:decimal/intl.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 
-class CalculatorModel extends ChangeNotifier {
+class CalculatorController extends GetxController {
   final List<NumPadChar> _listNumPadChars = [];
-  ValueNotifier<String> displayNumber = ValueNotifier("");
+  Rx<String> displayNumber = "".obs;
   String _memory = "";
 
   _clear() {
@@ -33,13 +34,13 @@ class CalculatorModel extends ChangeNotifier {
         // Only accept 3 character after (.)
         int decimalPlaces =
             numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
-        if (decimalPlaces >= 3) {
+        if (decimalPlaces + value.length > 3) {
            log("Vượt quá kí tự cho phép");
           return;
         }
       } else {
         // If the total length is 15, then return
-        if (numPadChar.value.length >= 15) {
+        if (value != "." && numPadChar.value.length + value.length > 15) {
           log("Đủ kí tự");
           return;
         }
@@ -178,7 +179,7 @@ class CalculatorModel extends ChangeNotifier {
   String _formatAmount(String value) {
     String trimmed = value.replaceAll(',', '');
     final nFormat = NumberFormat("#,##0.##", "en_US");
-    return nFormat.format(double.parse(trimmed));
+    return nFormat.format(DecimalIntl(Decimal.parse(trimmed)));
   }
 
   String _unFormatAmount(String value) {
@@ -249,9 +250,9 @@ class CalculatorModel extends ChangeNotifier {
   }
 
   @override
-  void dispose() {
-    displayNumber.dispose();
-    super.dispose();
+  void onClose() {
+    displayNumber.close();
+    super.onClose();
   }
 }
 
