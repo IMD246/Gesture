@@ -1,4 +1,5 @@
 import 'dart:developer';
+
 import 'package:decimal/decimal.dart';
 import 'package:decimal/intl.dart';
 import 'package:get/get.dart';
@@ -35,11 +36,11 @@ class CalculatorController extends GetxController {
         int decimalPlaces =
             numPadChar.value.length - (numPadChar.value.indexOf('.') + 1);
         if (decimalPlaces + value.length > 3) {
-           log("Vượt quá kí tự cho phép");
+          log("Vượt quá kí tự cho phép");
           return;
         }
       } else {
-        // If the total length is 15, then return
+        // If the total length is 15, then return. Still allow {.} character
         if (value != "." && numPadChar.value.length + value.length > 15) {
           log("Đủ kí tự");
           return;
@@ -72,7 +73,6 @@ class CalculatorController extends GetxController {
 
       // Update the display number on the screen.
       _setDisplayNumber();
-
       return;
     }
     // If there is already have a calculated result, then continue to add operator
@@ -103,8 +103,8 @@ class CalculatorController extends GetxController {
         _listNumPadChars.removeLast();
       } else {
         // Remove the last character of the number
-        String newValue =
-           _unFormatAmount(numPadChar.value).substring(0, numPadChar.value.length - 1);
+        String newValue = _unFormatAmount(numPadChar.value)
+            .substring(0, numPadChar.value.length - 1);
         // Update the new value
         numPadChar.value = newValue;
         if (newValue.isEmpty) {
@@ -115,7 +115,7 @@ class CalculatorController extends GetxController {
               _listNumPadChars.last.status == KeyType.operator) {
             _listNumPadChars.clear();
           }
-        } 
+        }
       }
       _setDisplayNumber();
     }
@@ -139,7 +139,7 @@ class CalculatorController extends GetxController {
   }
 
   String _toDisplayNumber() {
-   String result = '';
+    String result = '';
     for (NumPadChar numPadChar in _listNumPadChars) {
       result += (numPadChar.status == KeyType.num)
           ? _formatAmount(numPadChar.value)
@@ -177,8 +177,8 @@ class CalculatorController extends GetxController {
   }
 
   String _formatAmount(String value) {
-    String trimmed = value.replaceAll(',', '');
-    final nFormat = NumberFormat("#,##0.##", "en_US");
+    String trimmed = _unFormatAmount(value);
+    final nFormat = NumberFormat("#,##0.###", "en_US");
     return nFormat.format(DecimalIntl(Decimal.parse(trimmed)));
   }
 
