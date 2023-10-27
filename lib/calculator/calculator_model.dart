@@ -5,6 +5,7 @@ import 'package:decimal/intl.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
+import 'package:rational/rational.dart';
 
 import 'decimal_parser.dart';
 
@@ -131,7 +132,9 @@ class CalculatorController extends GetxController {
     DecimalParser p = DecimalParser();
     Expression exp = p.parse(_unFormatAmount(displayNumber.value));
     ContextModel cm = ContextModel();
-    String eval = exp.evaluate(EvaluationType.REAL, cm).toString();
+    dynamic res = exp.evaluate(EvaluationType.REAL, cm);
+    if (res is Rational) res = res.toDecimal();
+    String eval = res.toString();
     // Show the result on the screen.
     displayNumber.value = _formatAmount(eval);
     // Add current result to memory
