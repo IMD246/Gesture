@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 
+import 'decimal_parser.dart';
+
 class CalculatorController extends GetxController {
   final List<NumPadChar> _listNumPadChars = [];
   Rx<String> displayNumber = "".obs;
@@ -126,7 +128,7 @@ class CalculatorController extends GetxController {
     if (displayNumber.value.isEmpty) return;
 
     // Start calculate the result
-    Parser p = Parser();
+    DecimalParser p = DecimalParser();
     Expression exp = p.parse(_unFormatAmount(displayNumber.value));
     ContextModel cm = ContextModel();
     String eval = exp.evaluate(EvaluationType.REAL, cm).toString();
