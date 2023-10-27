@@ -133,7 +133,7 @@ class CalculatorController extends GetxController {
     Expression exp = p.parse(_unFormatAmount(displayNumber.value));
     ContextModel cm = ContextModel();
     dynamic res = exp.evaluate(EvaluationType.REAL, cm);
-    if (res is Rational) res = res.toDecimal();
+    if (res is Rational) res = res.toDecimal(scaleOnInfinitePrecision: 10);
     String eval = res.toString();
     // Show the result on the screen.
     displayNumber.value = _formatAmount(eval);
